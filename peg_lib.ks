@@ -20,6 +20,7 @@ declare global g_thr to 0.
 declare global g_steer to ship:up.
 
 declare global fairing to true.
+declare global prefairing to false.
 
 declare global tgt_r to 200000.
 declare global tgt_vy to 0.
@@ -378,8 +379,8 @@ declare function peg_boost {
     when s_met > 70 then {
         until peg_boosters = 0 {
             stage.
-            wait 1.
             set peg_boosters to peg_boosters -1.
+            wait 1.
         }
     }
     
@@ -403,7 +404,7 @@ declare function peg_boost {
         lock g_thr to peg_throttle_cap(peg_gcap).
     }
     
-    if(fairing = false) {
+    if(prefairing = true) {
         when(ship:q < 0.001) then {
             stage.
         }

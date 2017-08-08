@@ -89,15 +89,15 @@ declare function halfstage_ascent {
 }
 
 
-declare parameter pe to 30.
-declare parameter ap to 250.
-declare parameter inc to 51.6.
-declare parameter u to 70.
-declare parameter kick_start is 12.
+declare parameter pe to 40.
+declare parameter ap to 220.
+declare parameter inc to -28.6.
+declare parameter u to 50.
+declare parameter kick_start is 10.
 declare parameter kick_end is 50.
-declare parameter kick is 34.
+declare parameter kick is 35.
 declare parameter burn is 140.
-declare parameter hdg to -1.
+declare parameter hdg to 90.
 
 set peg_maxqdip to 0.85.
 set peg_gcap to 3.0.
