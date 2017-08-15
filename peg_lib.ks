@@ -7,7 +7,7 @@ declare global peg_start to 0.
 
 declare global peg_boosters to 0.
 declare global peg_launchcap to 1.0.
-declare global peg_major to 0.1.
+declare global peg_major to 0.5.
 declare global peg_eps to 16.
 declare global peg_maxqdip to 0.9.
 declare global holddown to 1.
@@ -59,13 +59,11 @@ declare global vis_dbg to "".
 declare function debug {
     declare parameter value.
     set vis_dbg to value.
-    peg_vis().
 }
 
 declare function peg_msg {
     declare parameter msg.
     set vis_msg to msg.
-    peg_vis().
 }
 
 declare function peg_throttle_cap {
@@ -97,34 +95,15 @@ declare function peg_update_engines {
 
 declare function peg_vis {
     clearscreen.
-    print vis_title + "T+"+round(s_met, 2)+"s".
+    print vis_title + "T+"+round(s_met, 0)+"s".
     print " ".
     print vis_msg.
     print " ".
-    print "Time to SECO: "+round(s_T, 2)+"s".
-    print "Fuel Left: "+round(stage:liquidfuel, 2)+"kg".
-    print "Vehicle State:".
-    print "  Alt: "+round((s_r-radius)/1000, 2)+"km".
-    print "  Vy:  "+round(s_vy, 2)+"m/s".
-    print "  Vx:  "+round(s_vx, 2)+"m/s".
-    print "  Acc: "+round(s_acc, 2)+"m/s^2".
-    print "  Ve:  "+round(s_ve, 1)+"m/2".
-    print " ".
-    print "  ApA: "+round(orbit:apoapsis/1000, 2)+"km".
-    print "  PeA: "+round(orbit:periapsis/1000, 2)+"km".
-    print "  Inc: "+round(orbit:inclination, 2)+"deg".
-    print " ".
-    print "SECO target:".
-    print "  Alt: "+round((tgt_r-radius)/1000, 2)+"km".
-    print "  Vy:  "+round(tgt_vy, 2)+"m/s".
-    print "  Vx:  "+round(tgt_vx, 2)+"m/s".
-    print "  ApA: "+round(tgt_ap/1000, 2)+"km".
-    print "  PeA: "+round(tgt_pe/1000, 2)+"km".
-    print "  Inc: "+round(tgt_inc, 2)+"deg".
-    print " ".
-    print "  Rll: "+round(90 - vectorangle(up:vector,ship:facing:starvector), 2)+"deg".
-    print "==debug==".
-    print vis_dbg.
+    print "SECO MET: "+round(s_met+s_T, 0)+"s".
+    print "GNC State:".
+    print "  ApA: "+round(orbit:apoapsis/1000, 2)+"/"+round(tgt_ap/1000, 2)+"km".
+    print "  PeA: "+round(orbit:periapsis/1000, 2)+"/"+round(tgt_pe/1000, 2)+"km".
+    print "  Inc: "+round(orbit:inclination, 2)+"/"+round(tgt_inc, 2)+"deg".
 }
 
 // Return a vector some angle above (or below) prograde.
@@ -165,9 +144,7 @@ declare function peg_init {
     local e is (ra-rp)/(ra+rp).
     local vp is sqrt((2*mu*ra)/(rp*2*a)).
     local rc is (a*(1-e^2))/(1+e*cos(u)).
-    print "rc "+rc.
     local vc is sqrt((vp^2) + 2*mu*((1/rc)-(1/rp))).
-    print "vc "+vc.
     local uc is 90 - arcsin((rp*vp)/(rc*vc)).
     
     set tgt_r to rc.
@@ -342,6 +319,21 @@ declare function peg_closedboost {
     return heading(inst_az_capped(tgt_inc, tgt_vx, 3), 28).
 }
 
+declare function peg_pitch_kick {
+    declare parameter kick_start.
+    declare parameter kick_end.
+    declare parameter kick.
+    declare parameter hdg.
+    
+    set t to (s_met - kick_start)/(kick_end-kick_start).
+    set angle to t*kick.
+    if(hdg < 0) {
+        return peg_hdg(inst_az(tgt_inc, tgt_vx), 90 - angle).
+    } else {
+        return peg_hdg(hdg, 90 - angle).
+    }
+}
+
 // Boost phase, runs open-loop guidance until first stage is empty.
 declare function peg_boost {
     declare parameter kick_start.
@@ -384,19 +376,14 @@ declare function peg_boost {
         }
     }
     
+    lock g_steer to peg_pitch_kick(kick_start, kick_end, kick, hdg).
+    
     until s_met > kick_end {
-        set t to (s_met - kick_start)/(kick_end-kick_start).
-        set angle to t*kick.
-        if(hdg < 0) {
-            set g_steer to peg_hdg(inst_az(tgt_inc, tgt_vx), 90 - angle).
-        } else {
-            set g_steer to peg_hdg(hdg, 90 - angle).
-        }
-        
         read_imu().
         peg_vis().
         wait 0.5.
     }
+    
     peg_msg("aoa-bound flight").
     lock g_steer to peg_vec(ship:velocity:surface).
     
@@ -473,8 +460,10 @@ declare function peg_closedloop {
     local A is 0.
     local B is 0.
     local C is 0.
-    local converged is -10.
+    local converged is -5.
     local delta is 0.
+    
+    local stabiliseSECO is 0.
     
     read_imu().
     peg_cycle(A, B, s_T, 0).
@@ -504,20 +493,29 @@ declare function peg_closedloop {
             set C to g[2].
             set s_T to g[3].
             set delta to 0.
+            
+            set last to s_met.
         }
 
-        set s_pitch to (A + B*delta + C).
+        set s_pitch to (A - B*delta + C).
         set s_pitch to max(-1, min(s_pitch, 1)).
         set s_pitch to arcsin(s_pitch).
         
         if converged = 1 {
-            set g_steer to heading(inst_az(tgt_inc, tgt_vx), (s_pitch + peg_gimbal_pitch()) + peg_vector_offset).
-            if(s_T - delta < 0.2) {
+            if(s_T - delta < 0.1) {
                 break.
+            } else if s_T - delta < 1 {
+                if stabiliseSECO = 0 {
+                    set g_steer to heading(inst_az(tgt_inc, tgt_vx), s_pitch).
+                    set stabiliseSECO to 1.
+                }
+            } else {
+                set g_steer to heading(inst_az(tgt_inc, tgt_vx), s_pitch + peg_vector_offset).
             }
         }
         wait 0.
     }
+    peg_vis().
     
     set g_thr to 0.
     unlock throttle.
@@ -529,7 +527,6 @@ declare function peg_closedloop {
             e:shutdown.
         }
     }
+    wait 5.
     set ship:control:neutralize to true.
-    //set g_steer to ship:prograde.
-    //wait 5.
 }

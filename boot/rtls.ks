@@ -15,16 +15,16 @@ if hasTarget {
 }
 else {
     // VAB rooftop
-    set tgt to latlng(28.60836982727051, -19.7030277252197).
+    //set tgt to latlng(28.60836982727051, -19.7030277252197).
     // HAB parking lot
-    //set tgt to latlng(28.6136798858643, -19.7031173706055).
+    set tgt to latlng(28.6136798858643, -19.7031173706055).
 }
 print "recovery AOS".
 
 waitForStage(2).
 doFlip(-1, 6).
 wait 1.
-doBoostBack(4, 0.5).
+doBoostBack(4, 0.7).
 
 set ag9 to true.
 
