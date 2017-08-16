@@ -74,6 +74,11 @@ declare function circularize {
 }
 
 declare function deorbit {
+
+    // First we need to list engines
+    local s_eng is list().
+    list engines in s_eng.
+
     print "Starting Deorbit Maneuver.".
     local g_thr is 0.
     lock throttle to g_thr.
@@ -82,12 +87,25 @@ declare function deorbit {
     wait until abs(burn_vector:pitch - facing:pitch) < 0.15 and abs(burn_vector:yaw - facing:yaw) < 0.15.
     
     wait 5.
+    unlock steering.
+    rcs on.
+    set ship:control:fore to 1.0.
+    wait 2.
+    for e in s_eng {
+        e:activate.
+    }
     set g_thr to 1.
-    wait until ship:periapsis < 20000.
+    wait 2.
+    set ship:control:neutralize to true.
+    lock steering to burn_vector.
+    wait until ship:periapsis < 0.
     set g_thr to 0.
     
     unlock throttle.
     unlock steering.
+    for e in s_eng {
+        e:shutdown.
+    }
     set ship:control:neutralize to true.
     set ship:control:pilotmainthrottle to 0.
 }

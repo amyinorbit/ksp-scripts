@@ -528,5 +528,6 @@ declare function peg_closedloop {
         }
     }
     wait 5.
-    set ship:control:neutralize to true.
+    unlock steering.
+    unlock g_steer.
 }
