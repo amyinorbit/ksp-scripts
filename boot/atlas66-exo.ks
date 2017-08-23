@@ -4,11 +4,11 @@ run once peg_lib.
 
 declare parameter pe to 130.
 declare parameter ap to 150.
-declare parameter inc to -28.7.
+declare parameter inc to -28.6.
 declare parameter u to 0.
-declare parameter kick_start is 1.
-declare parameter kick_end is 36.
-declare parameter kick is 34.
+declare parameter kick_start is 2.
+declare parameter kick_end is 34.
+declare parameter kick is 30.5.
 declare parameter burn is 300.
 declare parameter hdg to 90.
 

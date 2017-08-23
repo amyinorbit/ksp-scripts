@@ -29,7 +29,7 @@ set peg_meco_ap to 90. // RTLS
 //set peg_meco_ap to 100. // DPL
 set peg_maxqdip to 0.8.
 set peg_gcap to 3.5.
-set fairing to true.
+set fairing to false.
 set s_T to burn.
 
 peg_ascent(pe, ap, u, inc, kick_start, kick_end, kick, hdg).
