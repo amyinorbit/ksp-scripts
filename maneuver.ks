@@ -43,7 +43,6 @@ lock steering to ship:prograde.
 unlock throttle.
 remove nd.
 wait 10.
-set AG1 to True.
 
 //set throttle to 0 just in case.
 set ship:control:pilotmainthrottle to 0.

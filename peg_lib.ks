@@ -315,8 +315,55 @@ declare function peg_atmo_throttle {
     return 1.
 }
 
+
+function atmo_getHeading {
+    return Body:GeoPositionOf(Ship:Position +Ship:Velocity:Surface):Heading.
+}
+
+function atmo_getPitch {
+    return 90 - VectorAngle(Up:ForeVector, Ship:Velocity:Surface).
+}
+
+function wrap_heading {
+    declare parameter hdg.
+    if hdg > 360 {
+        return hdg - 360.
+    }
+    if hdg < 0 {
+        return hdg + 360.
+    }
+    return hdg.
+}
+
+declare function angle_diff {
+    declare parameter a1.
+    declare parameter a2.
+    
+    local phi is MOD(ABS(a2 - a1), 360).
+    if phi > 180 {
+        return 360 - phi.
+    }
+    return phi.
+}
+
+declare function peg_cappedAZ {
+    declare parameter i.
+    declare parameter vx.
+    declare parameter cap.
+    
+    local opt_heading is inst_az(i, vx).
+    local cur_heading is atmo_getHeading().
+    
+    local diff is angle_diff(opt_heading, cur_heading).
+    set diff to Min(Max(diff, -cap), cap).
+    
+    return cur_heading + diff.
+}
+
+
 declare function peg_closedboost {
-    return heading(inst_az_capped(tgt_inc, tgt_vx, 3), 28).
+    local mult is 1 - (ship:q * 250).
+    return heading(peg_cappedAZ(tgt_inc, tgt_vx, 15*mult), atmo_getPitch()):foreVector.
 }
 
 declare function peg_pitch_kick {
@@ -397,6 +444,11 @@ declare function peg_boost {
         }
     }
     
+    when ship:q < 0.004 then {
+        peg_msg("Q-alpha steering").
+        lock g_steer to peg_vec(peg_closedboost()).
+    }
+    
     until ship:altitude > 40000 and (stage:liquidfuel < 20 or apoapsis > tgt_meco_ap) {
         read_imu().
         peg_vis().
@@ -435,7 +487,7 @@ declare function peg_stage {
     local ign_time is missiontime.
     set ship:control:neutralize to true.
     lock steering to g_steer.
-    lock g_steer to peg_vec(ship:velocity:surface).
+    lock g_steer to peg_vec(peg_closedboost()).
     
     until (missiontime > ign_time+3 and ship:q < 0.001) {
         read_imu().
