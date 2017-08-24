@@ -339,9 +339,12 @@ declare function angle_diff {
     declare parameter a1.
     declare parameter a2.
     
-    local phi is MOD(ABS(a2 - a1), 360).
+    local phi is MOD(a1 - a2, 360).
     if phi > 180 {
-        return 360 - phi.
+        return phi - 360.
+    }
+    if phi < -180 {
+        return phi + 360.
     }
     return phi.
 }
@@ -357,7 +360,7 @@ declare function peg_cappedAZ {
     local diff is angle_diff(opt_heading, cur_heading).
     set diff to Min(Max(diff, -cap), cap).
     
-    return cur_heading + diff.
+    return wrap_heading(cur_heading + diff).
 }
 
 

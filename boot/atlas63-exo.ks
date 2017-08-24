@@ -4,7 +4,7 @@ run once peg_lib.
 
 declare parameter pe to 100.
 declare parameter ap to 130.
-declare parameter inc to -28.6.
+declare parameter inc to -28.7.
 declare parameter u to 180.
 declare parameter kick_start is 4.
 declare parameter kick_end is 40.

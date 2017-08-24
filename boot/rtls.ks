@@ -24,7 +24,7 @@ print "recovery AOS".
 waitForStage(2).
 doFlip(-1, 6).
 wait 1.
-doBoostBack(4, 0.7).
+doBoostBack(4, 0.75).
 
 set ag9 to true.
 
