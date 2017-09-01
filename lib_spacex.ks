@@ -110,7 +110,10 @@ function steerLimits {
     declare parameter value.
     declare parameter boost to false.
     
-    if boost and altitude > 10000 or alt:radar < 40 {
+    if boost and altitude > 10000 {
+        return limitNum(value, 8).
+    }
+    if boost and alt:radar < 40 {
         return limitNum(value, 2).
     }
     return limitNum(value, 10).
@@ -237,7 +240,7 @@ function doEntry {
     declare parameter entryDuration to 8.
     declare parameter level to 0.6.
 
-    wait until altitude < 70000.
+    wait until altitude < max(70000, entryAlt + 20000).
     lock steering to lookDirUp(srfRetrograde:foreVector, ship:north:foreVector).
     
     if entryDuration = 0 {
